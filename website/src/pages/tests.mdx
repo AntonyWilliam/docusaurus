@@ -1,7 +1,114 @@
-# Tests
+---
+title: Easy Auditor Installation Instructions for VAST
+---
 
-Docusaurus use some extra plugin instances for testing / dogfooding purpose:
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
-- [/tests/docs](/tests/docs)
-- [/tests/blog](/tests/blog)
-- [/tests/pages](/tests/pages)
+# Easy Auditor Installation Instructions for VAST
+
+## Overview
+
+This guide will help you set up Easy Auditor with VAST clusters. First, read this guide, then visit [DOCS-599: Easy Auditor/queries and reports for VAST - new portal](#).
+
+## Parts
+
+1. **Prerequisites**
+2. **Installation Process**
+
+## Requirements
+
+**General Requirements:**
+- A Linux server with SUSE 15.5 (recommended) and an installed database.
+- Network access between the database server, Eyeglass, and ECA appliances.
+
+<Tabs>
+  <TabItem value="existing-sql" label="Using an Existing SQL Database">
+
+### Scenario A: Using an Existing SQL Database
+
+1. **MSSQL Database:**
+   - **User:** `ecaadmin` (permissions to create tables, schema, indexes, sequences, insert, and query data)
+   - **Password:** `GoSuperna!`
+   - **Database Name:** `eyeglass`
+   - **IP Address:** `172.16.80.13`
+   - Ensure the database IP is reachable from both the Eyeglass and ECA appliances.
+
+2. **PostgreSQL Database:**
+   - **User:** `supadmin` (permissions to create tables, schema, indexes, sequences, insert, and query data)
+   - **Password:** `W3llhullodere!`
+   - **Database Name:** `eyeglass`
+   - **IP Address:** `172.16.80.14`
+   - Ensure the database IP is reachable from both Eyeglass and ECA appliances.
+
+  </TabItem>
+
+  <TabItem value="new-postgresql" label="Installing a New PostgreSQL Server">
+
+### Scenario B: Installing a New PostgreSQL Server
+
+1. **Deploy SUSE 15.5 VM:**
+   - Ensure the VM has sufficient resources and network access.
+
+2. **Install PostgreSQL:**
+   - Follow the installation guide for PostgreSQL on SUSE 15.5.
+   - Ensure PostgreSQL is running.
+
+3. **Set Up Users:**
+   - Create a new user with the required rights to create tables, indexes, sequences, insert, and query data.
+
+4. **Configure pg_hba.conf File:**
+   - Modify the pg_hba.conf file to allow access from remote locations.
+   - Sample Configuration:
+     ```plaintext
+     # TYPE  DATABASE        USER            ADDRESS                 METHOD
+     host    all             all             10.152.1.0/24           trust
+     ```
+   - Reload PostgreSQL configuration:
+     ```sql
+     SELECT pg_reload_conf();
+     ```
+
+5. **Final Steps:**
+   - Ensure the PostgreSQL server is reachable from both Eyeglass and ECA appliances.
+
+  </TabItem>
+</Tabs>
+
+## Installation Process
+
+1. **Pre-Installation Checks:**
+   - Verify all requirements.
+   - Check network connectivity between the appliance and the Database Server.
+
+2. **Configuration on Eyeglass:**
+   - Define SQL usage environment variables:
+     ```bash
+     export ECA_EVTARCHIVE_USE_SQL=true
+     export ECA_EVTARCHIVE_USE_HBASE=false
+     export ECA_EVTARCHIVE_SQL_BATCH_SIZE=10000
+     export ECA_EVTARCHIVE_SQL_TIME_WINDOW_SECS=5
+     ```
+   - Add the Eyeglass database server to the configuration:
+     - For PostgreSQL:
+       ```bash
+       ecactl db add --ip 172.16.80.14 --port 5432 --username eyeglass --dbname eyeglass --db-type POSTGRES
+       igls adv sqldb add --ip 172.16.80.14 --port 5432 --username eyeglass --dbname eyeglass --dbType POSTGRES --dbpass W3llhullodere!
+       ```
+     - For MSSQL:
+       ```bash
+       ecactl db add --ip 172.16.80.13 --port 50523 --username ecaadmin --dbname eyeglass --dbparams encrypt=false trustServerCertificate=false --db-type MSSQL
+       igls adv sqldb add --ip 172.16.80.13 --port 50523 --username ecaadmin --dbname eyeglass --dbparams=encrypt=false trustServerCertificate=false --dbType MSSQL --dbpass GoSuperna!
+       ```
+
+3. **Verification:**
+   - Check the logs to confirm that events are being logged into the database:
+     ```plaintext
+     Events Saved: <number>
+     ```
+   - Look for any connection errors in the logs.
+
+4. **Post-Installation Steps:**
+   - Refer to [DOCS-599: Easy Auditor/queries and reports for VAST -- new portal](#) for additional setup and usage instructions.
+
+Follow these steps to get Easy Auditor running with your VAST Clusters. Refer to the provided documentation for further details on using Easy Auditor.
